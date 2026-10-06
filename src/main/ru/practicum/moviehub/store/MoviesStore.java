@@ -10,7 +10,9 @@ public class MoviesStore {
     private final Map<Integer, Movie> movies = new HashMap<>();
     private int nextID = 1;
 
-    public MoviesStore(){};
+    public MoviesStore() {
+
+    }
 
     public Movie addMovie(String title, int year) {
         Movie movie = new Movie(nextID, title, year);
@@ -20,15 +22,12 @@ public class MoviesStore {
         return movie;
     }
 
-    public Map<Integer, Movie> getMovie(){
+    public Map<Integer, Movie> getMovie() {
         return movies;
-    }
-
-    public int getNextID() {
-        return nextID;
     }
 
     public void clear() {
         movies.clear();
+        this.nextID = 1;
     }
 }

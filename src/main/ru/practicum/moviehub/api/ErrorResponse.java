@@ -9,7 +9,9 @@ import java.nio.charset.StandardCharsets;
 
 public class ErrorResponse {
 
-    public ErrorResponse(){};
+    public ErrorResponse() {
+
+    }
 
     public void error(int code, String error, HttpExchange exchange) throws IOException {
 

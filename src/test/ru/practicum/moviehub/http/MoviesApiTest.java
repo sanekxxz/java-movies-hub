@@ -21,9 +21,9 @@ import java.util.List;
 
 public class MoviesApiTest {
 
-    private final static MoviesServer moviesServer = new MoviesServer(new MoviesStore(), 8080);
+    private static final MoviesServer moviesServer = new MoviesServer(new MoviesStore(), 8080);
     private static HttpClient httpClient;
-    private final static String uri = "http://localhost:8080/";
+    private static final String uri = "http://localhost:8080/";
     private static Gson gson = new Gson();
     private static String type = "application/json; charset=UTF-8";
 
@@ -111,7 +111,7 @@ public class MoviesApiTest {
                 new ListOfMoviesTypeToken().getType()
         );
 
-        assertEquals(2, movies.size());
+        assertEquals(10, movies.size());
 
     }
 
@@ -141,12 +141,7 @@ public class MoviesApiTest {
 
         moviesServer.getMoviesStore().clear();
 
-        String movieJson = """
-                    {
-                      "title": "Mus",
-                      "year": 2006
-                    }
-                    """;
+        String movieJson = "{\"title\":\"Mus\",\"year\":2006}";
 
         HttpResponse<String> correctData = postMovies(movieJson, type);
 
@@ -157,22 +152,11 @@ public class MoviesApiTest {
     @Test
     void postMovies_adds_filmsDataEmptyTitle() throws Exception {
 
-        String response = """
-                    {
-                      "error": "Ошибка валидации",
-                      "details": [
-                        "Название не должно быть пустым",
-                        "Год должен быть между 1888 и 2026"
-                      ]
-                    }
-                """;
+        String response = "{\"error\":\"Ошибка валидации\","
+                + "\"details\":[\"Название не должно быть длиннее 100 символов\","
+                + "\"Год должен быть между 1888 и 2026\"]}";
 
-        String movieJson = """
-                    {
-                      "title": "",
-                      "year": 2006
-                    }
-                    """;
+        String movieJson = "{\"title\":\"\",\"year\":2006}";
 
         HttpResponse<String> isEmptyTitle = postMovies(movieJson, type);
 
@@ -184,22 +168,11 @@ public class MoviesApiTest {
     @Test
     void postMovies_returnErrorLengthMore100() throws Exception {
 
-        String response = """
-                    {
-                      "error": "Ошибка валидации",
-                      "details": [
-                        "Название не должно быть пустым",
-                        "Год должен быть между 1888 и 2026"
-                      ]
-                    }
-                """;
+        String response = "{\"error\":\"Ошибка валидации\","
+                + "\"details\":[\"Название не должно быть длиннее 100 символов\","
+                + "\"Год должен быть между 1888 и 2026\"]}";
 
-        String movieJson = """
-                    {
-                      "title": "asddaasdasdasdasssssssssssssssssssssssswaqwqweqgfdgdfgdfgaewfdsvfswesdasfsdvewrvfdvvevrerggegsfsafsfsa",
-                      "year": 2006
-                    }
-                    """;
+        String movieJson = "{\"title\":\"asddaasdasdasdasssssssssssssssssssssssswaqwqweqgfdgdfgdfgaewfdsvfswesdasfsdvewrvfdvvevrerggegsfsafsfsa\",\"year\":2006}";
         HttpResponse<String> lineTitle = postMovies(movieJson, type);
 
 
@@ -211,22 +184,11 @@ public class MoviesApiTest {
     @Test
     void postMovies_returnErrorIfIncorrectYear() throws Exception {
 
-        String response = """
-                    {
-                      "error": "Ошибка валидации",
-                      "details": [
-                        "Название не должно быть пустым",
-                        "Год должен быть между 1888 и 2026"
-                      ]
-                    }
-                """;
+        String response = "{\"error\":\"Ошибка валидации\","
+                + "\"details\":[\"Название не должно быть длиннее 100 символов\","
+                + "\"Год должен быть между 1888 и 2026\"]}";
 
-        String movieJson = """
-                    {
-                      "title": "test",
-                      "year": 1887
-                    }
-                    """;
+        String movieJson = "{\"title\":\"test\",\"year\":1887}";
 
         HttpResponse<String> lineYear = postMovies(movieJson, type);
 
@@ -238,35 +200,28 @@ public class MoviesApiTest {
 
     @Test
     void postMovies_returnErrorIfIncorrectContentType() throws Exception {
-        String movieJson = """
-                    {
-                      "title": "test",
-                      "year": 1999
-                    }
-                    """;
+
+        String movieJson = "{\"title\":\"test\",\"year\":1999}";
 
         HttpResponse<String> typeTest = postMovies(movieJson, "text/plain");
 
 
         assertEquals(415, typeTest.statusCode());
 
-        assertEquals("{\"message\":\"Не верный Content-Type\"}", typeTest.body());
+        assertEquals("{\"error\":\"Не верный Content-Type\"}", typeTest.body());
     }
 
     @Test
     void postMovies_returnErrorIfIncorrectJson() throws Exception {
-        String invalidJson = """
-            {
-              "title": "Mus",
-              "year": 2006
-            """;
+
+        String invalidJson = "{\"title\":\"test\",\"year\":1999";
 
         HttpResponse<String> response = postMovies(invalidJson, "application/json");
 
 
         assertEquals(400, response.statusCode());
 
-        assertEquals("{\"message\":\"Не верный JSON\"}", response.body());
+        assertEquals("{\"error\":\"Не верный JSON\"}", response.body());
     }
 
 
@@ -276,21 +231,26 @@ public class MoviesApiTest {
             HttpResponse<String> resp = getMovieById(id);
             assertEquals("application/json; charset=UTF-8", resp.headers().firstValue("Content-Type").orElse(null));
 
-            Movie movies = gson.fromJson(resp.body(), Movie.class);
+        Movie movie = gson.fromJson(resp.body(), Movie.class);
+        Movie expected = moviesServer.getMoviesStore().getMovie().get(id);
 
-            assertTrue(movies.equals(moviesServer.getMoviesStore().getMovie().get(id)));
+        assertEquals(200, resp.statusCode());
+
+        assertEquals(expected.getId(), movie.getId());
+        assertEquals(expected.getTitle(), movie.getTitle());
+        assertEquals(expected.getYear(), movie.getYear());
 
     }
 
     @Test
     void getMovies_returnErrorIfNotExisting() throws Exception {
 
-        int id = 3;
+        int id = 15;
         HttpResponse<String> resp = getMovieById(id);
 
         assertEquals(404, resp.statusCode());
 
-        assertEquals("{\"message\":\"Фильм не найден\"}", resp.body());
+        assertEquals("{\"error\":\"Фильм не найден\"}", resp.body());
     }
 
     @Test
@@ -308,7 +268,7 @@ public class MoviesApiTest {
 
         assertEquals(400, resp.statusCode());
 
-        assertEquals("{\"message\":\"Некорректный ID\"}", resp.body());
+        assertEquals("{\"error\":\"Некорректный ID\"}", resp.body());
     }
 
     @Test
@@ -329,7 +289,7 @@ public class MoviesApiTest {
 
     @Test
     void delete_return_Error_IfFilms_not_found() throws Exception {
-        int id = 5;
+        int id = 23;
 
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(uri + "movies/" + id))
@@ -342,7 +302,7 @@ public class MoviesApiTest {
 
         assertEquals(404, resp.statusCode());
 
-        assertEquals("{\"message\":\"Фильм не найден\"}", resp.body());
+        assertEquals("{\"error\":\"Фильм не найден\"}", resp.body());
     }
 
     @Test
@@ -360,7 +320,7 @@ public class MoviesApiTest {
 
         assertEquals(400, resp.statusCode());
 
-        assertEquals("{\"message\":\"Некорректный ID\"}", resp.body());
+        assertEquals("{\"error\":\"Некорректный ID\"}", resp.body());
     }
 
     @Test
@@ -415,6 +375,6 @@ public class MoviesApiTest {
 
         HttpResponse<String> resp = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
 
-        assertEquals("{\"message\":\"Некорректный запроса\"}", resp.body());
+        assertEquals("{\"error\":\"Некорректный запрос\"}", resp.body());
     }
 }

@@ -26,8 +26,8 @@ public class BaseHttpHandler implements HttpHandler {
         this.moviesStore = moviesStore;
     }
 
-    private final String invalidRequest = """
-                {"message":"Некорректный запроса"}""";
+    private static final String INVALID_REQUEST =
+            "{\"error\":\"Некорректный запрос\"}";
 
     @Override
     public void handle(HttpExchange httpExchange) throws IOException {
@@ -57,24 +57,22 @@ public class BaseHttpHandler implements HttpHandler {
 
             if (parts[2].matches("\\d+")) {
                 int id = Integer.parseInt(parts[2]);
-                if(moviesStore.getMovie().containsKey(id)) {
+                if (moviesStore.getMovie().containsKey(id)) {
                     moviesStore.getMovie().remove(id);
                     sendResponse(204, "",exchange);
                 } else {
-                    String response = """
-                        {"message":"Фильм не найден"}""";
+                    String response = "{\"error\":\"Фильм не найден\"}";
+
                     errorResponse.error(404,response,exchange);
                 }
             } else {
-                String response = """
-                    {"message":"Некорректный ID"}""";
+                String response = "{\"error\":\"Некорректный ID\"}";
                 errorResponse.error(400,response,exchange);
             }
             return;
         }
 
-        String response = """
-                    {"message":"Некорректный запрос"}""";
+        String response = "{\"error\":\"Некорректный запрос\"}";
         errorResponse.error(400,response,exchange);
     }
 
@@ -86,24 +84,23 @@ public class BaseHttpHandler implements HttpHandler {
 
         String yearString = params.get("year");
 
-        if(title == null && yearString != null && !yearString.isBlank()) {
+        if (title == null && yearString != null && !yearString.isBlank()) {
             try {
                 int year = Integer.parseInt(yearString);
-                boolean isValid = year >= 1888 && year <= 2026 ;
-                if(isValid){
+                boolean isValid = year >= 1888 && year <= 2026;
+                if (isValid) {
                     String response = gson.toJson(moviesStore.getMovie().values().stream()
                             .filter(movie -> movie.getYear() == year)
                             .collect(Collectors.toSet()));
                     sendResponse(200, response,exchange);
                     return;
                 } else {
-                    String response = """
-                    {"message":"Некорректный параметр запроса — 'year'"}""";
+                    String response = "{\"error\":\"Некорректный параметр запроса — 'year'\"}";
                     sendResponse(400, response,exchange);
                     return;
                 }
             } catch (NumberFormatException e) {
-                sendResponse(400, invalidRequest,exchange);
+                sendResponse(400, INVALID_REQUEST,exchange);
                 return;
             }
         }
@@ -114,31 +111,29 @@ public class BaseHttpHandler implements HttpHandler {
 
         if (parts.length == 3 && parts[1].equals("movies")) {
 
-            if(parts[2].matches("\\d+")) {
+            if (parts[2].matches("\\d+")) {
                 int id = Integer.parseInt(parts[2]);
 
-                if(moviesStore.getMovie().containsKey(id)) {
+                if (moviesStore.getMovie().containsKey(id)) {
                     String response = gson.toJson(moviesStore.getMovie().get(id));
                     sendResponse(200, response,exchange);
                 } else {
-                    String response = """
-                        {"message":"Фильм не найден"}""";
+                    String response = "{\"error\":\"Фильм не найден\"}";
                     errorResponse.error(404,response,exchange);
                 }
             } else {
-                String response = """
-                    {"message":"Некорректный ID"}""";
+                String response = "{\"error\":\"Некорректный ID\"}";
                 errorResponse.error(400,response,exchange);
             }
 
-        } else if(parts.length == 2 && parts[1].equals("movies")){
+        } else if (parts.length == 2 && parts[1].equals("movies")) {
 
             String response = gson.toJson(moviesStore.getMovie().values());
             sendResponse(200, response,exchange);
             return;
         }
 
-        errorResponse.error(400, invalidRequest,exchange);
+        errorResponse.error(400, INVALID_REQUEST,exchange);
     }
 
     private void postMovies(HttpExchange exchange) throws IOException {
@@ -146,8 +141,7 @@ public class BaseHttpHandler implements HttpHandler {
         String contentType = exchange.getRequestHeaders().getFirst("Content-Type");
         boolean content = contentType != null && !contentType.startsWith("application/json");
         if (content) {
-            String response = """
-                    {"message":"Не верный Content-Type"}""";
+            String response = "{\"error\":\"Не верный Content-Type\"}";
             errorResponse.error(415, response, exchange);
             return;
         }
@@ -155,11 +149,10 @@ public class BaseHttpHandler implements HttpHandler {
         Movie movie;
        InputStream inputStream = exchange.getRequestBody();
 
-       try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream))){
+       try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream))) {
            movie = gson.fromJson(bufferedReader, Movie.class);
        } catch (JsonSyntaxException e) {
-           String response = """
-                    {"message":"Не верный JSON"}""";
+           String response = "{\"error\":\"Не верный JSON\"}";
 
            errorResponse.error(400, response, exchange);
            return;
@@ -173,7 +166,7 @@ public class BaseHttpHandler implements HttpHandler {
 
 
 
-        if(isValid) {
+        if (isValid) {
             moviesStore.addMovie(movie.getTitle(), movie.getId());
 
             String response = gson.toJson(movie);
@@ -181,22 +174,16 @@ public class BaseHttpHandler implements HttpHandler {
             sendResponse(201, response,exchange);
 
         } else {
-            String response = """
-                    {
-                      "error": "Ошибка валидации",
-                      "details": [
-                        "Название не должно быть пустым",
-                        "Год должен быть между 1888 и 2026"
-                      ]
-                    }
-                """;
+            String response = "{\"error\":\"Ошибка валидации\","
+                    + "\"details\":[\"Название не должно быть длиннее 100 символов\","
+                    + "\"Год должен быть между 1888 и 2026\"]}";
             errorResponse.error(422, response, exchange);
         }
     }
 
     private void sendResponse(final int code, final String response, final HttpExchange exchange) throws IOException {
 
-        if(code == 204) {
+        if (code == 204) {
             exchange.sendResponseHeaders(code, -1);
             return;
         }
