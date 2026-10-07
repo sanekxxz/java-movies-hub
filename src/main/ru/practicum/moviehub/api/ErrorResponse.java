@@ -1,28 +1,23 @@
 package ru.practicum.moviehub.api;
 
-import com.sun.net.httpserver.HttpExchange;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
-
+import java.util.List;
 
 public class ErrorResponse {
 
-    public ErrorResponse() {
+    private final String error;
+    private final List<String> details;
 
+    public ErrorResponse(String error, List<String> details) {
+        this.error = error;
+        this.details = details;
     }
 
-    public void error(int code, String error, HttpExchange exchange) throws IOException {
+    public String getError() {
+        return error;
+    }
 
-        exchange.getResponseHeaders().set("Content-Type", "application/json; charset=UTF-8");
-
-        byte[] responseBytes = error.getBytes(StandardCharsets.UTF_8);
-
-        exchange.sendResponseHeaders(code, responseBytes.length);
-
-        try (OutputStream outputStream = exchange.getResponseBody()) {
-            outputStream.write(responseBytes);
-        }
+    public List<String> getDetails() {
+        return details;
     }
 }

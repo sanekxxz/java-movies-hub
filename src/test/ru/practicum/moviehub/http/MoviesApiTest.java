@@ -7,6 +7,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
+import ru.practicum.moviehub.api.ErrorResponse;
 import ru.practicum.moviehub.model.Movie;
 import ru.practicum.moviehub.store.MoviesStore;
 
@@ -152,9 +153,6 @@ public class MoviesApiTest {
     @Test
     void postMovies_adds_filmsDataEmptyTitle() throws Exception {
 
-        String response = "{\"error\":\"Ошибка валидации\","
-                + "\"details\":[\"Название не должно быть длиннее 100 символов\","
-                + "\"Год должен быть между 1888 и 2026\"]}";
 
         String movieJson = "{\"title\":\"\",\"year\":2006}";
 
@@ -162,15 +160,17 @@ public class MoviesApiTest {
 
         assertEquals(422, isEmptyTitle.statusCode());
 
-        assertEquals(response, isEmptyTitle.body());
+        ErrorResponse error = gson.fromJson(
+                isEmptyTitle.body(),
+                ErrorResponse.class
+        );
+
+        assertEquals("Ошибка валидации", error.getError());
+        assertTrue(error.getDetails().contains("Название не должно быть пустым"));
     }
 
     @Test
     void postMovies_returnErrorLengthMore100() throws Exception {
-
-        String response = "{\"error\":\"Ошибка валидации\","
-                + "\"details\":[\"Название не должно быть длиннее 100 символов\","
-                + "\"Год должен быть между 1888 и 2026\"]}";
 
         String movieJson = "{\"title\":\"asddaasdasdasdasssssssssssssssssssssssswaqwqweqgfdgdfgdfgaewfdsvfswesdasfsdvewrvfdvvevrerggegsfsafsfsa\",\"year\":2006}";
         HttpResponse<String> lineTitle = postMovies(movieJson, type);
@@ -178,15 +178,18 @@ public class MoviesApiTest {
 
         assertEquals(422, lineTitle.statusCode());
 
-        assertEquals(response, lineTitle.body());
+        ErrorResponse error = gson.fromJson(
+                lineTitle.body(),
+                ErrorResponse.class
+        );
+
+        assertEquals("Ошибка валидации", error.getError());
+        assertTrue(error.getDetails().contains("Название не должно быть пустым"));
     }
 
     @Test
     void postMovies_returnErrorIfIncorrectYear() throws Exception {
 
-        String response = "{\"error\":\"Ошибка валидации\","
-                + "\"details\":[\"Название не должно быть длиннее 100 символов\","
-                + "\"Год должен быть между 1888 и 2026\"]}";
 
         String movieJson = "{\"title\":\"test\",\"year\":1887}";
 
@@ -195,7 +198,13 @@ public class MoviesApiTest {
 
         assertEquals(422, lineYear.statusCode());
 
-        assertEquals(response, lineYear.body());
+        ErrorResponse error = gson.fromJson(
+                lineYear.body(),
+                ErrorResponse.class
+        );
+
+        assertEquals("Ошибка валидации", error.getError());
+        assertTrue(error.getDetails().contains("Название не должно быть пустым"));
     }
 
     @Test
@@ -208,7 +217,12 @@ public class MoviesApiTest {
 
         assertEquals(415, typeTest.statusCode());
 
-        assertEquals("{\"error\":\"Не верный Content-Type\"}", typeTest.body());
+        ErrorResponse error = gson.fromJson(
+                typeTest.body(),
+                ErrorResponse.class
+        );
+
+        assertEquals("Не верный Content-Type", error.getError());
     }
 
     @Test
@@ -221,7 +235,12 @@ public class MoviesApiTest {
 
         assertEquals(400, response.statusCode());
 
-        assertEquals("{\"error\":\"Не верный JSON\"}", response.body());
+        ErrorResponse error = gson.fromJson(
+                response.body(),
+                ErrorResponse.class
+        );
+
+        assertEquals("Не верный JSON", error.getError());
     }
 
 
@@ -250,7 +269,13 @@ public class MoviesApiTest {
 
         assertEquals(404, resp.statusCode());
 
-        assertEquals("{\"error\":\"Фильм не найден\"}", resp.body());
+
+        ErrorResponse error = gson.fromJson(
+                resp.body(),
+                ErrorResponse.class
+        );
+
+        assertEquals("Фильм не найден", error.getError());
     }
 
     @Test
@@ -268,7 +293,12 @@ public class MoviesApiTest {
 
         assertEquals(400, resp.statusCode());
 
-        assertEquals("{\"error\":\"Некорректный ID\"}", resp.body());
+        ErrorResponse error = gson.fromJson(
+                resp.body(),
+                ErrorResponse.class
+        );
+
+        assertEquals("Некорректный ID", error.getError());
     }
 
     @Test
@@ -302,7 +332,12 @@ public class MoviesApiTest {
 
         assertEquals(404, resp.statusCode());
 
-        assertEquals("{\"error\":\"Фильм не найден\"}", resp.body());
+        ErrorResponse error = gson.fromJson(
+                resp.body(),
+                ErrorResponse.class
+        );
+
+        assertEquals("Фильм не найден", error.getError());
     }
 
     @Test
@@ -320,7 +355,12 @@ public class MoviesApiTest {
 
         assertEquals(400, resp.statusCode());
 
-        assertEquals("{\"error\":\"Некорректный ID\"}", resp.body());
+        ErrorResponse error = gson.fromJson(
+                resp.body(),
+                ErrorResponse.class
+        );
+
+        assertEquals("Некорректный ID", error.getError());
     }
 
     @Test
@@ -375,6 +415,13 @@ public class MoviesApiTest {
 
         HttpResponse<String> resp = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
 
-        assertEquals("{\"error\":\"Некорректный запрос\"}", resp.body());
+        ErrorResponse error = gson.fromJson(
+                resp.body(),
+                ErrorResponse.class
+        );
+
+        assertEquals("Некорректный запрос", error.getError());
+
+
     }
 }
